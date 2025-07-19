@@ -86,14 +86,17 @@ class monitor:
 
 
 
-        wordList = ['ATOM', 'HETATM']
-        text = f=open(self.structuref, 'r').read()
+        wordList = ['ATOM', 'HETA']
+        text = open(self.structuref, 'r').readlines()                             # corrected here: text = f=open(self.structuref, 'r').read()
+        
         #return sum([ text.split().count(w) for w in wordList])
         ag = AtomGroup()
-        ag.setBetas([0.]*sum([ text.split().count(w) for w in wordList]))
+        #ag.setBetas([0.]*sum([ text.split().count(w) for w in wordList]))    # does not work for too large systems: there are no space between hetatm records
+        n_atoms = sum([1 if line[0:4] in wordList else 0 for line in text])   # correction 
+        ag.setBetas([0.]* n_atoms)
 	#structure = parsePDB(sys.argv[1], ag=ag)
 
-        self.structure = parsePDB(self.structuref,ag=ag)
+        self.structure = parsePDB(self.structuref, ag=ag)
         self.step = step
 
 
@@ -254,14 +257,17 @@ class suMD:
             f = open('SUMD.log.tmp', 'w')
             for line in open('./suMD-Simulation/SUMD.log'):
                 if line[0:8] == 'Step_num':
-                    checkslope = float(line.split()[2])
-                    checkdistance = float(line.split()[3])
+                    # if number if steps here overcomes 100 the line cannot be splitted with ' '
+                    # use trimmmed line 
+                    trimmed_lined = line[0:8]
+                    checkslope = float(trimmed_lined.split()[1])
+                    checkdistance = float(trimmed_lined.split()[2])
                     if checkslope < self.slopesel or checkdistance < float(self.Bound):
-                        self.last_RightDistance = float(line.split()[3])
-                        self.wrong_meta = int(line.split()[-1])
-                        self.right_tricky = int(line.split()[-2])
-                        self.right_optimus = int(line.split()[-3])
-                        self.stepsuMD = int(line.split()[1])
+                        self.last_RightDistance = float(trimmed_lined.split()[2])
+                        self.wrong_meta = int(trimmed_lined.split()[-1])
+                        self.right_tricky = int(trimmed_lined.split()[-2])
+                        self.right_optimus = int(trimmed_lined.split()[-3])
+                        self.stepsuMD = int(trimmed_lined.split()[0])
             for line in open('./suMD-Simulation/SUMD.log'):
                 if line[0:8] == 'Step_num': #maicol ... problema con restart sopra i 100 step [0:7] ???
                     checkstep = int(line.split()[1])
@@ -352,8 +358,8 @@ class suMD:
 
     # funzione per lancio di acemd dove si esplicitano il device e quale input utilizzare
     def Run_Acemd(self, n_device, Input_run):
-
-        os.system('{} --device {} {} > suMD-Simulation_step.log'.format(self.acemd, n_device, Input_run))
+        print('{} --device {} {} > suMD-Simulation_step.log'.format(self.acemd, n_device, Input_run))
+        os.system('{} --input {} --device {} > suMD-Simulation_step.log'.format(self.acemd, Input_run, n_device))
 
     # funzione per calolo della pendenza m
     def slope(self, fdistance):
