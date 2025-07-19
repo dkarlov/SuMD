@@ -358,8 +358,21 @@ class suMD:
 
     # funzione per lancio di acemd dove si esplicitano il device e quale input utilizzare
     def Run_Acemd(self, n_device, Input_run):
-        print('{} --device {} {} > suMD-Simulation_step.log'.format(self.acemd, n_device, Input_run))
-        os.system('{} --input {} --device {} > suMD-Simulation_step.log'.format(self.acemd, Input_run, n_device))
+        
+        # acemd version check
+        result = subprocess.run([self.acemd, '--version'], stdout=subprocess.PIPE).stdout.split()
+        if result[0] != 'ACEMD':
+            raise RuntimeError(f'Check of ACEMD version: {self.acemd} --version yield the following output: {result}')
+        else:
+            if result[1].split('.')[0] == '3':
+                print('{} --device {} {} > suMD-Simulation_step.log'.format(self.acemd, n_device, Input_run))
+                os.system('{} --device {} {} > suMD-Simulation_step.log'.format(self.acemd, Input_run, n_device))
+            elif result[1].split('.')[0] == '4':
+            	print('{} --input {} --device {} > suMD-Simulation_step.log'.format(self.acemd, n_device, Input_run))
+        	os.system('{} --input {} --device {} > suMD-Simulation_step.log'.format(self.acemd, Input_run, n_device))
+            else:
+        	raise NotImplementedError(f'ACEMD version {result[1]} is not supported yet') 
+        
 
     # funzione per calolo della pendenza m
     def slope(self, fdistance):
